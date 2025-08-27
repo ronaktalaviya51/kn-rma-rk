@@ -1,0 +1,73 @@
+{
+  "name": "KN-RMA Development Environment",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-json",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "ms-vscode.vscode-todo-highlight",
+        "PKief.material-icon-theme",
+        "GitHub.copilot",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode.hexeditor",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-yaml",
+        "humao.rest-client"
+      ],
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/sh",
+        "terminal.integrated.defaultProfile.linux": "sh",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "files.eol": "\n",
+        "prettier.singleQuote": true,
+        "prettier.semi": true,
+        "prettier.trailingComma": "es5",
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "javascript.updateImportsOnFileMove.enabled": "always"
+      }
+    }
+  },
+  
+  "forwardPorts": [3000, 8080, 3306],
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API (Node.js)",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Frontend (Vue.js)",
+      "onAutoForward": "openPreview"
+    },
+    "3306": {
+      "label": "MySQL Database",
+      "onAutoForward": "ignore"
+    }
+  },
+  
+  "postCreateCommand": "echo 'Installing dependencies...' && npm install",
+  "postStartCommand": "echo 'KN-RMA Development Environment is ready! 🚀'",
+  
+  "remoteUser": "node",
+  "initializeCommand": "echo 'Initializing KN-RMA development environment...'",
+  
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ]
+}

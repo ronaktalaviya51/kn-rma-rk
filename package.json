@@ -1,0 +1,40 @@
+{
+  "name": "kn-rma-system",
+  "version": "1.0.0",
+  "description": "KN Electronics RMA Management System",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node setup-env.js",
+    "start": "npm run setup && docker-compose up -d",
+    "stop": "docker-compose down",
+    "restart": "npm run stop && npm run start",
+    "logs": "docker-compose logs -f",
+    "logs:backend": "docker-compose logs -f backend",
+    "logs:frontend": "docker-compose logs -f frontend",
+    "logs:db": "docker-compose logs -f db",
+    "build": "docker-compose build",
+    "clean": "docker-compose down -v && docker system prune -f",
+    "ubuntu:deploy": "./ubuntu-deploy.sh",
+    "ubuntu:setup": "./setup-env.sh",
+    "status": "docker-compose ps",
+    "health": "curl -f http://localhost:3000/health || echo 'Backend not responding'"
+  },
+  "keywords": [
+    "rma",
+    "management",
+    "system",
+    "vue",
+    "express",
+    "mysql"
+  ],
+  "author": "KN Electronics",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "@vue/compiler-dom": "^3.5.18",
+    "@vue/compiler-sfc": "^2.7.16",
+    "vue": "^2.7.16"
+  }
+}

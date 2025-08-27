@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  backend:
+    image: node:18-alpine
+    container_name: kn-rma-backend
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-coofee2iucheiphienei}
+      - DB_NAME=${DB_NAME:-kn_rma}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your_email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your_app_password}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
+    depends_on:
+      - db
+
+  frontend:
+    image: node:18-alpine
+    container_name: kn-rma-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run serve"
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    environment:
+      - VUE_APP_API_BASE_URL=${VUE_APP_API_BASE_URL:-http://localhost:3000}
+
+  db:
+    image: mysql:8.0
+    container_name: kn-rma-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=coofee2iucheiphienei
+      - MYSQL_DATABASE=kn_rma
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  ssh:
+    image: linuxserver/openssh-server
+    container_name: kn-rma-ssh
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Taipei
+      - PASSWORD_ACCESS=true
+      - USER_NAME=developer
+      - USER_PASSWORD=ko8ais0ir2cahgh4aew9
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./:/config/projects
+
+volumes:
+  db_data:
