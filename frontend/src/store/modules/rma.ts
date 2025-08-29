@@ -82,9 +82,10 @@ const actions = {
       commit('SET_ERROR', null)
       
       const response = await rmaService.getRequests(params)
+
       commit('SET_REQUESTS', {
-        requests: (response as any).data,
-        pagination: (response as any).pagination
+        requests: (response as any).data.data,
+        pagination: (response as any).data.pagination
       })
       
       return response
@@ -102,7 +103,7 @@ const actions = {
       commit('SET_ERROR', null)
       
       const response = await rmaService.getRequest(id)
-      commit('SET_CURRENT_REQUEST', response.data)
+      commit('SET_CURRENT_REQUEST', response.data.data)
       
       return response
     } catch (error: any) {

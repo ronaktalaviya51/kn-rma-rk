@@ -48,6 +48,8 @@ const actions = {
       commit('SET_ERROR', null)
       
       const response = await authService.login(credentials)
+
+      // console.log(response)
       
       commit('SET_TOKEN', response.data.token)
       commit('SET_USER', response.data.user)

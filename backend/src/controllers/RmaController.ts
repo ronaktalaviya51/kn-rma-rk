@@ -9,12 +9,23 @@ import moment from 'moment';
 export class RmaController {
   private emailService = new EmailService();
 
+  constructor() {
+    // Bind methods to preserve "this" context in Express
+    this.createRequest = this.createRequest.bind(this);
+    this.getRequestStatus = this.getRequestStatus.bind(this);
+    this.getAllRequests = this.getAllRequests.bind(this);
+    this.getRequestById = this.getRequestById.bind(this);
+    this.updateRequestStatus = this.updateRequestStatus.bind(this);
+    this.deleteRequest = this.deleteRequest.bind(this);
+    this.getStats = this.getStats.bind(this);
+  }
+
   async createRequest(req: Request, res: Response) {
     const requestData = req.body;
-    
+
     // Generate RMA number
     const rmaNumber = await this.generateRmaNumber();
-    
+
     const result = await db.query(
       `INSERT INTO rma_requests (
         rma_number, customer_name, customer_email, customer_phone,
@@ -37,7 +48,7 @@ export class RmaController {
         requestData.purchase_location,
         requestData.tracking_number,
         requestData.issue_description,
-        requestData.return_reason
+        requestData.return_reason,
       ]
     );
 
@@ -47,16 +58,18 @@ export class RmaController {
     await this.emailService.sendRmaConfirmation(requestData.customer_email, {
       rmaNumber,
       customerName: requestData.customer_name,
-      productName: requestData.product_name
+      productName: requestData.product_name,
     });
 
-    logger.info(`RMA request created: ${rmaNumber} for ${requestData.customer_name}`);
+    logger.info(
+      `RMA request created: ${rmaNumber} for ${requestData.customer_name}`
+    );
 
     res.status(201).json({
       success: true,
-      message: 'RMA request created successfully',
+      message: "RMA request created successfully",
       rmaNumber,
-      requestId
+      requestId,
     });
   }
 
@@ -70,12 +83,12 @@ export class RmaController {
     );
 
     if (requests.length === 0) {
-      throw createError('RMA request not found', 404);
+      throw createError("RMA request not found", 404);
     }
 
     res.json({
       success: true,
-      data: requests[0]
+      data: requests[0],
     });
   }
 
@@ -83,40 +96,46 @@ export class RmaController {
     const { page = 1, limit = 10, status, priority, search } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    let whereConditions = [];
+    let whereConditions: string[] = [];
     let params: any[] = [];
 
     if (status) {
-      whereConditions.push('status = ?');
+      whereConditions.push("status = ?");
       params.push(status);
     }
 
     if (priority) {
-      whereConditions.push('priority = ?');
+      whereConditions.push("priority = ?");
       params.push(priority);
     }
 
     if (search) {
-      whereConditions.push('(customer_name LIKE ? OR customer_email LIKE ? OR rma_number LIKE ?)');
+      whereConditions.push(
+        "(customer_name LIKE ? OR customer_email LIKE ? OR rma_number LIKE ?)"
+      );
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
+    // count query
     const countQuery = `SELECT COUNT(*) as total FROM rma_requests ${whereClause}`;
     const totalResult = await db.query(countQuery, params);
     const total = totalResult[0].total;
 
+    // Inline limit/offset values directly
     const dataQuery = `
-      SELECT r.*, u.username as processed_by_username
-      FROM rma_requests r
-      LEFT JOIN users u ON r.processed_by = u.id
-      ${whereClause}
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-    
-    params.push(Number(limit), offset);
+    SELECT r.*, u.username as processed_by_username
+    FROM rma_requests r
+    LEFT JOIN users u ON r.processed_by = u.id
+    ${whereClause}
+    ORDER BY r.created_at DESC
+    LIMIT ${Number(limit)} OFFSET ${offset}
+  `;
+
     const requests = await db.query(dataQuery, params);
 
     res.json({
@@ -126,8 +145,8 @@ export class RmaController {
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
-      }
+        pages: Math.ceil(total / Number(limit)),
+      },
     });
   }
 
@@ -136,19 +155,19 @@ export class RmaController {
 
     const requests = await db.query(
       `SELECT r.*, u.username as processed_by_username
-       FROM rma_requests r
-       LEFT JOIN users u ON r.processed_by = u.id
-       WHERE r.id = ?`,
+        FROM rma_requests r
+        LEFT JOIN users u ON r.processed_by = u.id
+        WHERE r.id = ?`,
       [id]
     );
 
     if (requests.length === 0) {
-      throw createError('RMA request not found', 404);
+      throw createError("RMA request not found", 404);
     }
 
     // Get uploaded files
     const files = await db.query(
-      'SELECT * FROM file_uploads WHERE rma_request_id = ?',
+      "SELECT * FROM file_uploads WHERE rma_request_id = ?",
       [id]
     );
 
@@ -156,24 +175,24 @@ export class RmaController {
       success: true,
       data: {
         ...requests[0],
-        files
-      }
+        files,
+      },
     });
   }
 
   async updateRequestStatus(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { status, admin_notes, priority } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.id ?? null;
 
     // Check if request exists
     const existingRequests = await db.query(
-      'SELECT * FROM rma_requests WHERE id = ?',
+      "SELECT * FROM rma_requests WHERE id = ?",
       [id]
     );
 
     if (existingRequests.length === 0) {
-      throw createError('RMA request not found', 404);
+      throw createError("RMA request not found", 404);
     }
 
     const existingRequest = existingRequests[0];
@@ -183,7 +202,7 @@ export class RmaController {
       `UPDATE rma_requests 
        SET status = ?, admin_notes = ?, priority = ?, processed_by = ?, processed_at = NOW()
        WHERE id = ?`,
-      [status, admin_notes, priority, userId, id]
+      [status ?? null, admin_notes ?? null, priority ?? null, userId ?? null, id ?? null]
     );
 
     // Send status update email
@@ -191,29 +210,33 @@ export class RmaController {
       rmaNumber: existingRequest.rma_number,
       customerName: existingRequest.customer_name,
       status,
-      adminNotes: admin_notes
+      adminNotes: admin_notes,
     });
 
-    logger.info(`RMA request ${existingRequest.rma_number} status updated to ${status} by user ${userId}`);
+    logger.info(
+      `RMA request ${existingRequest.rma_number} status updated to ${status} by user ${userId}`
+    );
 
     res.json({
       success: true,
-      message: 'RMA request status updated successfully'
+      message: "RMA request status updated successfully",
     });
   }
 
   async deleteRequest(req: Request, res: Response) {
     const { id } = req.params;
 
-    const result = await db.query('DELETE FROM rma_requests WHERE id = ?', [id]);
+    const result = await db.query("DELETE FROM rma_requests WHERE id = ?", [
+      id,
+    ]);
 
     if (result.affectedRows === 0) {
-      throw createError('RMA request not found', 404);
+      throw createError("RMA request not found", 404);
     }
 
     res.json({
       success: true,
-      message: 'RMA request deleted successfully'
+      message: "RMA request deleted successfully",
     });
   }
 
@@ -234,23 +257,23 @@ export class RmaController {
 
     res.json({
       success: true,
-      data: stats[0]
+      data: stats[0],
     });
   }
 
   private async generateRmaNumber(): Promise<string> {
-    const prefix = 'KN-RMA-';
-    const timestamp = moment().format('YYYYMMDD');
-    
+    const prefix = "KN-RMA-";
+    const timestamp = moment().format("YYYYMMDD");
+
     // Get today's count
     const countResult = await db.query(
       `SELECT COUNT(*) as count FROM rma_requests 
        WHERE DATE(created_at) = CURDATE()`
     );
-    
+
     const todayCount = countResult[0].count + 1;
-    const sequence = todayCount.toString().padStart(3, '0');
-    
+    const sequence = todayCount.toString().padStart(3, "0");
+
     return `${prefix}${timestamp}-${sequence}`;
   }
 }

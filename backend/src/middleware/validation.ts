@@ -14,6 +14,10 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
 
 // RMA Request validation schema
 export const rmaRequestSchema = Joi.object({
+  order_number: Joi.string().max(100).optional(),
+  po_number: Joi.string().max(100).optional(),
+  tracking_number: Joi.string().max(100).optional(),  
+  quantity: Joi.number().min(1).max(100).optional(),    
   customer_name: Joi.string().min(2).max(100).required(),
   customer_email: Joi.string().email().required(),
   customer_phone: Joi.string().min(8).max(20).optional(),
